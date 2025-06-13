@@ -1,1 +1,99 @@
-<!-- Upload detail HTML template --> 
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ result.trial_name }}</h1>
+
+<a href="{{ url_for('uploads') }}" class="back-link">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    Back to Uploads
+</a>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ result.calculated_steps }}</div>
+        <div class="stat-label">Calculated Steps</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-value">{{ result.distance }}</div>
+        <div class="stat-label">Distance</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-value">{{ result.time }}</div>
+        <div class="stat-label">Time</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-value">
+            {% if result.delta != "N/A" %}
+                {% if result.delta|int == 0 %}
+                    <span style="color: var(--success);">Perfect</span>
+                {% elif result.delta|int|abs <= 5 %}
+                    <span style="color: var(--warning);">Δ{{ result.delta }}</span>
+                {% else %}
+                    <span style="color: var(--error);">Δ{{ result.delta }}</span>
+                {% endif %}
+            {% else %}
+                N/A
+            {% endif %}
+        </div>
+        <div class="stat-label">Accuracy</div>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h3>User Information</h3>
+        <table>
+            <tr>
+                <td class="text-muted">Gender</td>
+                <td>{{ result.gender }}</td>
+            </tr>
+            <tr>
+                <td class="text-muted">Height</td>
+                <td>{{ result.height }}</td>
+            </tr>
+            <tr>
+                <td class="text-muted">Stride Length</td>
+                <td>{{ result.stride }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Trial Information</h3>
+        <table>
+            <tr>
+                <td class="text-muted">Sample Rate</td>
+                <td>{{ result.rate }}</td>
+            </tr>
+            <tr>
+                <td class="text-muted">Actual Steps</td>
+                <td>{{ result.actual_steps }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<h2>Signal Processing Visualization</h2>
+
+<div class="plot">
+    <h3>Acceleration after Dot Product</h3>
+    <p class="plot-description">
+        Combined acceleration signal after calculating the dot product between user acceleration and gravitational acceleration vectors.
+    </p>
+    <img src="data:image/png;base64,{{ result.dot_product_plot }}" alt="Dot Product Plot">
+</div>
+
+<div class="plot">
+    <h3>Acceleration after Filtering</h3>
+    <p class="plot-description">
+        Final filtered signal after applying low-pass and high-pass filters. Steps are detected from the peaks in this signal.
+    </p>
+    <img src="data:image/png;base64,{{ result.filtered_plot }}" alt="Filtered Plot">
+</div>
+
+{% endblock %} 
