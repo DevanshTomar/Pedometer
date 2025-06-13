@@ -1,24 +1,117 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Pedometer Analysis</h1>
+<!-- Analysis History Section -->
+<section class="section">
+    <div class="section-header">
+        <h2 class="section-title">
+            <span class="icon">🕐</span>
+            Analysis History
+        </h2>
+        <a href="#new-analysis" class="btn btn-primary">
+            <span class="btn-icon">+</span>
+            New Analysis
+        </a>
+    </div>
+    
+    {% if pipelines %}
+    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        Showing most recent analyses first
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th>Trial Name</th>
+                <th>Steps</th>
+                <th>Distance</th>
+                <th>Time</th>
+                <th>Accuracy</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pipeline in pipelines %}
+            <tr>
+                <td><strong>{{ pipeline.trial_name }}</strong></td>
+                <td>
+                    <span class="badge badge-success">
+                        <span>👟</span>
+                        {{ pipeline.steps }}
+                    </span>
+                </td>
+                <td>{{ pipeline.distance }}</td>
+                <td>{{ pipeline.time }}</td>
+                <td>
+                    {% if pipeline.delta != "N/A" %}
+                        {% if pipeline.delta|int == 0 %}
+                            <span class="badge badge-success">Perfect</span>
+                        {% elif pipeline.delta|int|abs <= 5 %}
+                            <span class="badge badge-warning">Δ{{ pipeline.delta }}</span>
+                        {% else %}
+                            <span class="badge badge-error">Δ{{ pipeline.delta }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge badge-neutral">N/A</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('upload_detail', file_path=pipeline.file_path) }}" class="btn btn-secondary">
+                        <span>👁️</span>
+                        View Details
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📊</div>
+        <div class="empty-state-title">No analysis results yet</div>
+        <p>Upload a data file below to get started</p>
+    </div>
+    {% endif %}
+</section>
 
-<div class="card">
-    <h3>Upload New Data File</h3>
+<!-- New Analysis Section -->
+<section class="section" id="new-analysis">
+    <h2 class="section-title">
+        <span class="icon">📍</span>
+        New Analysis
+    </h2>
+    
     <form method="POST" action="{{ url_for('create') }}" enctype="multipart/form-data">
-        <div class="form-group">
-            <label for="name">Trial Name</label>
-            <input type="text" id="name" name="name" placeholder="Enter a name for this trial" required>
+        <!-- Trial Information -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <span>✏️</span>
+                Trial Information
+            </h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="name">Trial Name <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" placeholder="e.g., Morning Walk" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="rate">Sampling Rate (Hz)</label>
+                    <input type="number" id="rate" name="rate" min="1" placeholder="e.g., 100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="steps">Actual Steps (for validation)</label>
+                    <input type="number" id="steps" name="steps" min="0" placeholder="e.g., 50">
+                </div>
+            </div>
         </div>
         
-        <div class="form-group">
-            <label for="data">Data File</label>
-            <input type="file" id="data" name="data" accept=".txt" required>
-        </div>
-        
-        <div class="grid">
-            <div>
-                <h4>User Information</h4>
+        <!-- User Information -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <span>👤</span>
+                User Information
+            </h3>
+            <div class="form-grid">
                 <div class="form-group">
                     <label for="gender">Gender</label>
                     <select id="gender" name="gender">
@@ -30,78 +123,56 @@
                 
                 <div class="form-group">
                     <label for="height">Height (cm)</label>
-                    <input type="number" id="height" name="height" step="0.1" min="0" placeholder="e.g., 175.5">
+                    <input type="number" id="height" name="height" step="0.1" min="0" placeholder="e.g., 170">
                 </div>
                 
                 <div class="form-group">
-                    <label for="stride">Stride Length</label>
-                    <input type="number" id="stride" name="stride" step="0.1" min="0" placeholder="Leave empty for auto-calculation">
-                </div>
-            </div>
-            
-            <div>
-                <h4>Trial Information</h4>
-                <div class="form-group">
-                    <label for="rate">Sample Rate (Hz)</label>
-                    <input type="number" id="rate" name="rate" min="1" placeholder="e.g., 100">
-                </div>
-                
-                <div class="form-group">
-                    <label for="steps">Actual Steps</label>
-                    <input type="number" id="steps" name="steps" min="0" placeholder="For accuracy comparison">
+                    <label for="stride">Stride Length (cm)</label>
+                    <input type="number" id="stride" name="stride" step="0.1" min="0" placeholder="Auto-calculated if empty">
                 </div>
             </div>
         </div>
         
-        <button type="submit">Upload and Analyze</button>
+        <!-- Accelerometer Data -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <span>📁</span>
+                Accelerometer Data
+            </h3>
+            <div class="form-group">
+                <label for="data">Data File <span class="required">*</span></label>
+                <div class="file-upload">
+                    <input type="file" id="data" name="data" accept=".txt" required onchange="updateFileName(this)">
+                    <label for="data" class="file-upload-label">
+                        Choose File
+                    </label>
+                    <span id="file-name" style="margin-left: 1rem;">No file chosen</span>
+                </div>
+                <p class="file-info">Upload a text file containing accelerometer data in the format: x,y,z,x,y,z,...</p>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            <span class="btn-icon">▶</span>
+            Start Analysis
+        </button>
     </form>
-</div>
+</section>
 
-<h2>Analysis Results</h2>
-{% if pipelines %}
-<table>
-    <thead>
-        <tr>
-            <th>Trial Name</th>
-            <th>Calculated Steps</th>
-            <th>Distance</th>
-            <th>Time</th>
-            <th>Accuracy</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for pipeline in pipelines %}
-        <tr>
-            <td><strong>{{ pipeline.trial_name }}</strong></td>
-            <td>{{ pipeline.steps }}</td>
-            <td>{{ pipeline.distance }}</td>
-            <td>{{ pipeline.time }}</td>
-            <td>
-                {% if pipeline.delta != "N/A" %}
-                    {% if pipeline.delta|int == 0 %}
-                        <span style="color: var(--success);">Perfect</span>
-                    {% elif pipeline.delta|int|abs <= 5 %}
-                        <span style="color: var(--warning);">Δ{{ pipeline.delta }}</span>
-                    {% else %}
-                        <span style="color: var(--error);">Δ{{ pipeline.delta }}</span>
-                    {% endif %}
-                {% else %}
-                    <span class="text-muted">N/A</span>
-                {% endif %}
-            </td>
-            <td>
-                <a href="{{ url_for('upload_detail', file_path=pipeline.file_path) }}">View Details</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<div class="empty-state">
-    <div class="empty-state-icon">⚡</div>
-    <div class="empty-state-title">No uploads yet</div>
-    <div class="empty-state-description">Upload a data file to get started. You can use the example data file at <code>example_data/walking_data.txt</code> to test the application.</div>
-</div>
-{% endif %}
+<script>
+function updateFileName(input) {
+    const fileName = input.files[0]?.name || 'No file chosen';
+    const fileNameElement = document.getElementById('file-name');
+    
+    // Smooth transition for file name change
+    fileNameElement.style.opacity = '0';
+    fileNameElement.style.transform = 'translateY(-5px)';
+    
+    setTimeout(() => {
+        fileNameElement.textContent = fileName;
+        fileNameElement.style.opacity = '1';
+        fileNameElement.style.transform = 'translateY(0)';
+    }, 150);
+}
+</script>
 {% endblock %} 

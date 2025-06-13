@@ -21,16 +21,27 @@ def uploads():
             with open(upload.file_path, 'r') as f:
                 data = f.read()
             pipeline = Pipeline.run(data, upload.user, upload.trial)
+            
+            # Extract timestamp from filename for sorting
+            filename = os.path.basename(upload.file_path)
+            # Filename format: {trial_name}_{timestamp}.txt
+            # Extract timestamp part (YYYYMMDD_HHMMSS)
+            timestamp_str = filename.rsplit('_', 2)[-2] + '_' + filename.rsplit('_', 1)[-1].replace('.txt', '')
+            
             pipelines.append({
                 'file_path': upload.file_path,
                 'trial_name': upload.trial.name,
                 'steps': pipeline.analyzer.steps,
                 'distance': f"{pipeline.analyzer.distance:.2f}" if pipeline.analyzer.distance else "N/A",
                 'time': f"{pipeline.analyzer.time:.2f}s" if pipeline.analyzer.time else "N/A",
-                'delta': pipeline.analyzer.delta if pipeline.analyzer.delta is not None else "N/A"
+                'delta': pipeline.analyzer.delta if pipeline.analyzer.delta is not None else "N/A",
+                'timestamp': timestamp_str
             })
         except Exception as e:
             print(f"Error processing {upload.file_path}: {str(e)}")
+    
+    # Sort pipelines by timestamp in descending order (most recent first)
+    pipelines.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
     
     return render_template('uploads.html', pipelines=pipelines)
 
